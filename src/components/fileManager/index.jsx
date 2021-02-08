@@ -1,6 +1,6 @@
 import React, { Component } from "react"
 
-import { Breadcrumb, List } from "antd"
+import { Breadcrumb, List, Spin } from "antd"
 import {
   FileTextTwoTone,
   FileTwoTone,
@@ -9,7 +9,8 @@ import {
   SoundTwoTone,
   VideoCameraTwoTone,
 } from "@ant-design/icons"
-import data from "./fakeData"
+// import data from "./fakeData"
+
 import "./styles.css"
 import TextButton from "./../textButton"
 
@@ -19,7 +20,7 @@ const iconsStyles = {
 const icons = {
   folder: <FolderTwoTone style={iconsStyles} twoToneColor="#f2c222" />,
   video: <VideoCameraTwoTone style={iconsStyles} twoToneColor="#828282" />,
-  sound: <SoundTwoTone style={iconsStyles} twoToneColor="#828282" />,
+  audio: <SoundTwoTone style={iconsStyles} twoToneColor="#828282" />,
   picture: <PictureTwoTone style={iconsStyles} />,
   text: <FileTextTwoTone style={iconsStyles} />,
   unknown: <FileTwoTone style={iconsStyles} />,
@@ -29,13 +30,26 @@ export default class FileManager extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      defaultPath: ["d:", "my works"],
+      defaultPath: "",
       path: [],
+      content: undefined,
+    }
+    this.wholeContent = undefined
+  }
+
+  async componentDidMount() {
+    const initialData = await this.props.dataProvider()
+    if (initialData.status === 1) {
+      this.wholeContent = initialData.data.dirs
+      this.setState({
+        defaultPath: initialData.data.path,
+        content: this.wholeContent,
+      })
     }
   }
 
   _createBreadcrumbItems = () => {
-    const defaultPath = this.state.defaultPath.map((dp) => (
+    const defaultPathBreadcrumb = (
       <Breadcrumb.Item>
         <TextButton
           onClick={() => {
@@ -44,10 +58,10 @@ export default class FileManager extends Component {
             })
           }}
         >
-          {dp}
+          {this.state.defaultPath}
         </TextButton>
       </Breadcrumb.Item>
-    ))
+    )
 
     const path = this.state.path.map((p) => (
       <Breadcrumb.Item>
@@ -63,21 +77,51 @@ export default class FileManager extends Component {
       </Breadcrumb.Item>
     ))
 
-    return defaultPath.concat(path)
+    path.unshift(defaultPathBreadcrumb)
+    return path
   }
 
-  onItemClick = (type, text, id) => {
-    const _folderOnClick = (text) => {
+  _getPathSubContent = (pathArr) => {
+    let content = this.wholeContent
+    for (let p of pathArr) {
+      content = content[p.id].content
+    }
+
+    return content
+  }
+
+  _setPathSubContent = async (defaultPath, pathArr) => {
+    let path = defaultPath
+    let desiredFolderRef
+    let content = this.wholeContent
+
+    for (let p of pathArr) {
+      path = path + "\\\\" + p.text
+      desiredFolderRef = content[p.id]
+      content = desiredFolderRef.content
+    }
+
+    const res = await this.props.dataProvider(path)
+    if (res.status === 1) {
+      desiredFolderRef.content = res.data.dirs
+    }
+  }
+
+  onListItemClick = async (type, text, id) => {
+    const _folderOnClick = async (text) => {
       let path = this.state.path
       path.push({ text, id, level: this.state.path.length + 1 })
 
+      if (!this._getPathSubContent(path)) {
+        await this._setPathSubContent(this.state.defaultPath, path)
+      }
       this.setState({ path })
     }
     const _videoOnClick = () => {}
     const _soundOnClick = () => {}
 
     if (type === "folder") {
-      _folderOnClick(text)
+      await _folderOnClick(text)
     } else if (type === "video") {
     } else if (type === "sound") {
     } else {
@@ -86,41 +130,43 @@ export default class FileManager extends Component {
   }
 
   render() {
-    let folderContent = data
-    for (let p of this.state.path) {
-      folderContent = folderContent[p.id].content
-    }
+    const content = this._getPathSubContent(this.state.path)
 
     return (
       <div className="filemanager">
         <div>
           <Breadcrumb>{this._createBreadcrumbItems()}</Breadcrumb>
         </div>
-        <div className="filemanager-list">
-          <List
-            itemLayout="horizontal"
-            dataSource={folderContent}
-            renderItem={(item, index) => (
-              <List.Item>
-                <List.Item.Meta
-                  avatar={icons[item.type]}
-                  title={
-                    <TextButton
-                      onClick={() => {
-                        this.onItemClick(item.type, item.title, index)
-                      }}
-                      size={14}
-                    >
-                      {item.title}
-                    </TextButton>
-                  }
-                />
-                {/* TODO : size of file */}
-                <div></div>
-              </List.Item>
-            )}
-          />
-        </div>
+
+        {content ? (
+          <div className="filemanager-list">
+            <List
+              itemLayout="horizontal"
+              dataSource={content}
+              renderItem={(item, index) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={icons[item.type]}
+                    title={
+                      <TextButton
+                        onClick={() => {
+                          this.onListItemClick(item.type, item.title, index)
+                        }}
+                        size={14}
+                      >
+                        {item.title}
+                      </TextButton>
+                    }
+                  />
+                  {/* TODO : size of file */}
+                  <div></div>
+                </List.Item>
+              )}
+            />
+          </div>
+        ) : (
+          <Spin size="large" />
+        )}
       </div>
     )
   }
