@@ -14,6 +14,10 @@ import {
 import "./styles.css"
 import TextButton from "./../textButton"
 
+import Store from "../../model/Store"
+import ExtendableStore from "../../model/Store/extendableStore"
+import { observer } from "mobx-react"
+
 var base64 = require("base-64")
 var utf8 = require("utf8")
 
@@ -29,23 +33,19 @@ const icons = {
   unknown: <FileTwoTone style={iconsStyles} />,
 }
 
-export default class FileManager extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      defaultPath: "",
-      path: [],
-    }
-    this.wholeContent = undefined
-  }
-
+class FileManager extends Component {
   async componentDidMount() {
+    if (
+      Store.filemanager.defaultPath &&
+      ExtendableStore.filemanager.wholeContent
+    )
+      return
+
     const initialData = await this.props.dataProvider()
     if (initialData.status === 1) {
-      this.wholeContent = initialData.data.dirs
-      this.setState({
-        defaultPath: initialData.data.path,
-      })
+      ExtendableStore.setWholeContent(initialData.data.dirs)
+
+      Store.filemanager.setDefaultPath(initialData.data.path)
     }
   }
 
@@ -54,23 +54,19 @@ export default class FileManager extends Component {
       <Breadcrumb.Item>
         <TextButton
           onClick={() => {
-            this.setState({
-              path: [],
-            })
+            Store.filemanager.setPath([])
           }}
         >
-          {this.state.defaultPath}
+          {Store.filemanager.defaultPath}
         </TextButton>
       </Breadcrumb.Item>
     )
 
-    const path = this.state.path.map((p) => (
+    const path = Store.filemanager.path.map((p) => (
       <Breadcrumb.Item>
         <TextButton
           onClick={() => {
-            this.setState({
-              path: this.state.path.slice(0, p.level),
-            })
+            Store.filemanager.setPath(Store.filemanager.path.slice(0, p.level))
           }}
         >
           {p.text}
@@ -83,7 +79,8 @@ export default class FileManager extends Component {
   }
 
   _getPathSubContent = (pathArr) => {
-    let content = this.wholeContent
+    let content = ExtendableStore.filemanager.wholeContent
+
     for (let p of pathArr) {
       content = content[p.id].content
     }
@@ -93,25 +90,21 @@ export default class FileManager extends Component {
 
   _setPathSubContent = async (defaultPath, pathArr) => {
     let path = defaultPath
-    let desiredFolderRef
-    let content = this.wholeContent
-
     for (let p of pathArr) {
       path = path + "\\\\" + p.text
-      desiredFolderRef = content[p.id]
-      content = desiredFolderRef.content
     }
 
     const res = await this.props.dataProvider(path)
     if (res.status === 1) {
-      desiredFolderRef.content = res.data.dirs
+      ExtendableStore.extendWholeContent(pathArr, res.data.dirs)
     }
   }
 
   onListItemClick = async (type, text, id) => {
     const _createFullPath = () => {
-      let filePath = this.state.defaultPath
-      for (let p of this.state.path) {
+      let filePath = Store.filemanager.defaultPath
+
+      for (let p of Store.filemanager.path) {
         filePath += p.text + "\\"
       }
       filePath += text
@@ -120,13 +113,14 @@ export default class FileManager extends Component {
     }
 
     const _folderOnClick = async (text) => {
-      let path = this.state.path
-      path.push({ text, id, level: this.state.path.length + 1 })
+      let { defaultPath } = Store.filemanager
+      let newPath = [...Store.filemanager.path]
+      newPath.push({ text, id, level: newPath.length + 1 })
 
-      if (!this._getPathSubContent(path)) {
-        await this._setPathSubContent(this.state.defaultPath, path)
+      if (!this._getPathSubContent(newPath)) {
+        await this._setPathSubContent(defaultPath, newPath)
       }
-      this.setState({ path })
+      Store.filemanager.setPath(newPath)
     }
     const _videoOnClick = (text) => {
       const base64Path = base64.encode(utf8.encode(_createFullPath()))
@@ -145,7 +139,8 @@ export default class FileManager extends Component {
   }
 
   render() {
-    const content = this._getPathSubContent(this.state.path)
+    const { path } = Store.filemanager
+    const content = this._getPathSubContent(path)
 
     return (
       <div className="filemanager">
@@ -186,3 +181,5 @@ export default class FileManager extends Component {
     )
   }
 }
+
+export default observer(FileManager)
