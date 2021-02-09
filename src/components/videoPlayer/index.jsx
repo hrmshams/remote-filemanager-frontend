@@ -19,7 +19,10 @@ export default class VideoPlayer extends Component {
         <div>{state.filename}</div>
 
         <video className="video-player" controls>
-          <source src={this.baseUrl + "/video/" + params.id} type="video/mp4" />
+          <source
+            src={this.baseUrl + "/api/video/" + params.id}
+            type="video/mp4"
+          />
           {/* <track
             label="English"
             kind="subtitles"

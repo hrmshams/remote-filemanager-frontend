@@ -132,7 +132,8 @@ class FileManager extends Component {
       await _folderOnClick(text)
     } else if (type === "video") {
       _videoOnClick(text)
-    } else if (type === "sound") {
+    } else if (type === "audio") {
+      _videoOnClick(text)
     } else {
       alert(text)
     }

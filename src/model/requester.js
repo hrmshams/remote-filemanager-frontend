@@ -2,11 +2,14 @@ const axios = require("axios")
 const queryString = require("query-string")
 
 // const { sleep } = require("./../components/utility")
-const server = "http://localhost:3030/"
+let server = ""
+if (process.env.NODE_ENV === "development") {
+  server = "http://localhost:3030"
+}
 
 const ENDPOINTS = {
   ls: {
-    url: server + "file-manager/ls",
+    url: server + "/api/file-manager/ls",
     method: "POST",
   },
 }
