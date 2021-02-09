@@ -13,12 +13,17 @@ class App extends Component {
     return (
       <div>
         <Switch>
-          <Route path="/video/:id">
-            <VideoPlayer />
-          </Route>
-          <Route path="/">
-            <FileManager dataProvider={fileManagerDataProvider} />
-          </Route>
+          <Route
+            exact
+            path="/"
+            render={(props) => (
+              <FileManager dataProvider={fileManagerDataProvider} {...props} />
+            )}
+          />
+          <Route
+            path="/video/:id"
+            render={(props) => <VideoPlayer {...props} />}
+          />
         </Switch>
       </div>
     )

@@ -1,6 +1,5 @@
 import React, { Component } from "react"
 import "./styles.css"
-
 export default class VideoPlayer extends Component {
   constructor(props) {
     super(props)
@@ -10,12 +9,17 @@ export default class VideoPlayer extends Component {
     }
   }
   render() {
-    return (
-      <div class="video-container">
-        <div>Video Player</div>
+    const {
+      match: { params },
+      location: { state },
+    } = this.props
 
-        <video class="video-player" controls>
-          <source src={this.baseUrl + "/video"} type="video/mp4" />
+    return (
+      <div className="video-container">
+        <div>{state.filename}</div>
+
+        <video className="video-player" controls>
+          <source src={this.baseUrl + "/video/" + params.id} type="video/mp4" />
           {/* <track
             label="English"
             kind="subtitles"

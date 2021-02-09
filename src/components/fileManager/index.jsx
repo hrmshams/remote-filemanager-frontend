@@ -14,6 +14,9 @@ import {
 import "./styles.css"
 import TextButton from "./../textButton"
 
+var base64 = require("base-64")
+var utf8 = require("utf8")
+
 const iconsStyles = {
   fontSize: "20px",
 }
@@ -106,6 +109,16 @@ export default class FileManager extends Component {
   }
 
   onListItemClick = async (type, text, id) => {
+    const _createFullPath = () => {
+      let filePath = this.state.defaultPath
+      for (let p of this.state.path) {
+        filePath += p.text + "\\"
+      }
+      filePath += text
+
+      return filePath
+    }
+
     const _folderOnClick = async (text) => {
       let path = this.state.path
       path.push({ text, id, level: this.state.path.length + 1 })
@@ -115,12 +128,16 @@ export default class FileManager extends Component {
       }
       this.setState({ path })
     }
-    const _videoOnClick = () => {}
+    const _videoOnClick = (text) => {
+      const base64Path = base64.encode(utf8.encode(_createFullPath()))
+      this.props.history.push("/video/" + base64Path, { filename: text })
+    }
     const _soundOnClick = () => {}
 
     if (type === "folder") {
       await _folderOnClick(text)
     } else if (type === "video") {
+      _videoOnClick(text)
     } else if (type === "sound") {
     } else {
       alert(text)
