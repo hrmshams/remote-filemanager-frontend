@@ -32,7 +32,6 @@ export default class FileManager extends Component {
     this.state = {
       defaultPath: "",
       path: [],
-      content: undefined,
     }
     this.wholeContent = undefined
   }
@@ -43,7 +42,6 @@ export default class FileManager extends Component {
       this.wholeContent = initialData.data.dirs
       this.setState({
         defaultPath: initialData.data.path,
-        content: this.wholeContent,
       })
     }
   }
